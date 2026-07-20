@@ -66,6 +66,8 @@ policy:
   # whether to use wrist RGB
   use_wrist_rgb: true
   wrist_rgb_output_dim: 64
+  # MoE scalar gate: learn to weight point cloud vs wrist RGB
+  use_moe_gate: false
 
 
   pointcloud_encoder_cfg:

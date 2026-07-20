@@ -39,6 +39,8 @@ class DP3(BasePolicy):
             crop_shape=None,
             use_pc_color=False,
             pointnet_type="pointnet",
+            use_wrist_rgb=False,
+            use_moe_gate=False,
             pointcloud_encoder_cfg=None,
             # parameters passed to step
             **kwargs):

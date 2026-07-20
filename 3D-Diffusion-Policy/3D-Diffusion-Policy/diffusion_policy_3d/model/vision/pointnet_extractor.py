@@ -212,6 +212,7 @@ class DP3Encoder(nn.Module):
                  pointnet_type='pointnet',
                  use_wrist_rgb=False,
                  wrist_rgb_output_dim=64,
+                 use_moe_gate=False,
                  ):
         super().__init__()
         self.imagination_key = 'imagin_robot'
@@ -276,6 +277,16 @@ class DP3Encoder(nn.Module):
         else:
             cprint(f"[DP3Encoder] wrist_rgb not used (use_wrist_rgb={use_wrist_rgb}, in obs_space={self.wrist_rgb_key in observation_space})", "yellow")
 
+        # MoE gate: 标量门控, 学习点云 vs 腕部 RGB 的可信度
+        self._use_moe_gate = use_moe_gate and self.use_wrist_rgb
+        if self._use_moe_gate:
+            gate_in_dim = out_channel + wrist_rgb_output_dim + output_dim
+            self.gate_mlp = nn.Sequential(
+                nn.Linear(gate_in_dim, 2),
+                nn.Sigmoid()
+            )
+            cprint(f"[DP3Encoder] MoE scalar gate enabled, input dim={gate_in_dim}", "yellow")
+
         cprint(f"[DP3Encoder] output dim: {self.n_output_channels}", "red")
 
 
@@ -299,6 +310,15 @@ class DP3Encoder(nn.Module):
             wrist_rgb = wrist_rgb.permute(0, 3, 1, 2)    # (B*T, 3, H, W)
             wrist_feat = self.wrist_encoder(wrist_rgb)    # (B*T, wrist_rgb_output_dim)
             feats.append(wrist_feat)
+
+            if self._use_moe_gate:
+                gate_input = torch.cat([pn_feat, wrist_feat, state_feat], dim=-1)
+                gate = self.gate_mlp(gate_input)  # (B*T, 2)
+                feats[0] = gate[:, 0:1] * feats[0]  # pn_feat
+                feats[2] = gate[:, 1:2] * feats[2]  # wrist_feat
+                # 存下 gate 值供外部 log
+                self.last_gate_pc = gate[:, 0].mean().item()
+                self.last_gate_wrist = gate[:, 1].mean().item()
 
         final_feat = torch.cat(feats, dim=-1)
         return final_feat

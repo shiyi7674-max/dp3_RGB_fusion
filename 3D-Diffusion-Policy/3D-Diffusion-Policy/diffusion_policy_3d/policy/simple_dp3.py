@@ -39,6 +39,8 @@ class SimpleDP3(BasePolicy):
             crop_shape=None,
             use_pc_color=False,
             pointnet_type="pointnet",
+            use_wrist_rgb=False,
+            use_moe_gate=False,
             pointcloud_encoder_cfg=None,
             # parameters passed to step
             **kwargs):
@@ -66,6 +68,8 @@ class SimpleDP3(BasePolicy):
                                                 pointcloud_encoder_cfg=pointcloud_encoder_cfg,
                                                 use_pc_color=use_pc_color,
                                                 pointnet_type=pointnet_type,
+                                                    use_wrist_rgb=use_wrist_rgb,
+                                                    use_moe_gate=use_moe_gate,
                                                 )
 
         # create diffusion model
@@ -364,6 +368,9 @@ class SimpleDP3(BasePolicy):
         loss_dict = {
                 'bc_loss': loss.item(),
             }
+        if getattr(self.obs_encoder, '_use_moe_gate', False):
+            loss_dict['gate/alpha_pc'] = self.obs_encoder.last_gate_pc
+            loss_dict['gate/alpha_wrist'] = self.obs_encoder.last_gate_wrist
 
         # print(f"t2-t1: {t2-t1:.3f}")
         # print(f"t3-t2: {t3-t2:.3f}")
