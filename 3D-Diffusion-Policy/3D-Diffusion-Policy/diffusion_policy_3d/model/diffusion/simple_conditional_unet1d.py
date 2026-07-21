@@ -43,23 +43,23 @@ class ConditionalResidualBlock1D(nn.Module):
             # predicts per-channel scale and bias
             cond_channels = out_channels * 2
             self.cond_encoder = nn.Sequential(
-                nn.Mish(),
                 nn.Linear(cond_dim, cond_channels),
+                nn.Mish(),
                 Rearrange('batch t -> batch t 1'),
             )
         elif condition_type == 'add':
             self.cond_encoder = nn.Sequential(
-                nn.Mish(),
                 nn.Linear(cond_dim, out_channels),
+                nn.Mish(),
                 Rearrange('batch t -> batch t 1'),
             )
         elif condition_type == 'mlp_film':
             cond_channels = out_channels * 2
             self.cond_encoder = nn.Sequential(
-                nn.Mish(),
                 nn.Linear(cond_dim, cond_dim),
                 nn.Mish(),
                 nn.Linear(cond_dim, cond_channels),
+                nn.Mish(),
                 Rearrange('batch t -> batch t 1'),
             )
         else:
